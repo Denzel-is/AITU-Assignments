@@ -1,0 +1,269 @@
+## Test 1
+General scenario
+
+Input:
+```text
+CONFIG 0
+ADD 101 3 SW
+ADD 202 5 HW
+TRIAGE
+TRIAGE
+FIND 101
+SERVE
+SERVE
+END
+```
+
+Expected:
+```text
+ADDED 101 P=33
+ADDED 202 P=51
+TRIAGED 101 P=33
+TRIAGED 202 P=51
+FOUND 101 READY P=33
+SERVED 202
+SERVED 101
+```
+
+Actual:
+```text
+ADDED 101 P=33
+ADDED 202 P=51
+TRIAGED 101 P=33
+TRIAGED 202 P=51
+FOUND 101 READY P=33
+SERVED 202
+SERVED 101
+```
+
+
+## Test 2
+Empty structures
+
+Input:
+```text
+CONFIG 0
+TRIAGE
+SERVE
+END
+```
+
+Expected:
+```text
+EMPTY WAITING
+EMPTY READY
+```
+
+Actual:
+```text
+EMPTY WAITING
+EMPTY READY
+```
+
+
+## Test 3
+Duplicate ID
+
+Input:
+```text
+CONFIG 0
+ADD 10 2 ACC
+ADD 10 5 SW
+FIND 10
+END
+```
+
+Expected:
+```text
+ADDED 10 P=22
+DUPLICATE 10
+FOUND 10 WAITING P=22
+```
+
+Actual:
+```text
+ADDED 10 P=22
+DUPLICATE 10
+FOUND 10 WAITING P=22
+```
+
+
+## Test 4
+Equal score
+
+Input:
+```text
+CONFIG 0
+ADD 15 4 SW
+ADD 22 4 SW
+TRIAGE
+TRIAGE
+SERVE
+SERVE
+END
+```
+
+Expected:
+```text
+ADDED 15 P=43
+ADDED 22 P=43
+TRIAGED 15 P=43
+TRIAGED 22 P=43
+SERVED 15
+SERVED 22
+```
+
+Actual:
+```text
+ADDED 15 P=43
+ADDED 22 P=43
+TRIAGED 15 P=43
+TRIAGED 22 P=43
+SERVED 15
+SERVED 22
+```
+
+
+## Test 5
+Cancel WAITING
+
+Input:
+```text
+CONFIG 0
+ADD 7 2 HW
+ADD 8 3 ACC
+CANCEL 7
+TRIAGE
+FIND 7
+FIND 8
+END
+```
+
+Expected:
+```text
+ADDED 7 P=21
+ADDED 8 P=32
+CANCELLED 7
+TRIAGED 8 P=32
+NOT FOUND 7
+FOUND 8 READY P=32
+```
+
+Actual:
+```text
+ADDED 7 P=21
+ADDED 8 P=32
+CANCELLED 7
+TRIAGED 8 P=32
+NOT FOUND 7
+FOUND 8 READY P=32
+```
+
+
+## Test 6
+Cancel READY
+
+Input:
+```text
+CONFIG 0
+ADD 20 5 SW
+TRIAGE
+CANCEL 20
+SERVE
+END
+```
+
+Expected:
+```text
+ADDED 20 P=53
+TRIAGED 20 P=53
+CANCELLED 20
+EMPTY READY
+```
+
+Actual:
+```text
+ADDED 20 P=53
+TRIAGED 20 P=53
+CANCELLED 20
+EMPTY READY
+```
+
+
+## Test 7
+Hash collision
+
+Input:
+```text
+CONFIG 0
+ADD 1 1 SW
+ADD 8 2 HW
+ADD 15 3 ACC
+FIND 1
+FIND 8
+FIND 15
+CANCEL 8
+FIND 8
+END
+```
+
+Expected:
+```text
+ADDED 1 P=13
+ADDED 8 P=21
+ADDED 15 P=32
+FOUND 1 WAITING P=13
+FOUND 8 WAITING P=21
+FOUND 15 WAITING P=32
+CANCELLED 8
+NOT FOUND 8
+```
+
+Actual:
+```text
+ADDED 1 P=13
+ADDED 8 P=21
+ADDED 15 P=32
+FOUND 1 WAITING P=13
+FOUND 8 WAITING P=21
+FOUND 15 WAITING P=32
+CANCELLED 8
+NOT FOUND 8
+```
+
+
+## Test 8
+Reuse ID after cancel
+
+Input:
+```text
+CONFIG 0
+ADD 5 1 SW
+CANCEL 5
+ADD 5 5 HW
+TRIAGE
+FIND 5
+SERVE
+END
+```
+
+Expected:
+```text
+ADDED 5 P=13
+CANCELLED 5
+ADDED 5 P=51
+TRIAGED 5 P=51
+FOUND 5 READY P=51
+SERVED 5
+```
+
+Actual:
+```text
+ADDED 5 P=13
+CANCELLED 5
+ADDED 5 P=51
+TRIAGED 5 P=51
+FOUND 5 READY P=51
+SERVED 5
+```
+
