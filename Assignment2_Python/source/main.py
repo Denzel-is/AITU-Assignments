@@ -150,6 +150,13 @@ class TicketHashTable:
 
     def put(self, ticket_id, ticket):
         index = self.getIndex(ticket_id)
+        current = self.buckets[index]
+
+        while current is not None:
+            if current.id == ticket_id:
+                current.ticket = ticket
+                return
+            current = current.next
 
         new_node = HashNode(ticket_id, ticket)
 
@@ -199,6 +206,9 @@ class TicketHashTable:
 # ---------------- CONFIG ----------------
 
 def getConfig(number):
+    if not 0 <= number <= 9:
+        return None
+
     if number == 0 or number == 5:
         return 7, 3, 1, 2
 
@@ -215,7 +225,7 @@ def getConfig(number):
 
 
 def readId(text):
-    if not text.isdigit():
+    if not 1 <= len(text) <= 10 or not text.isascii() or not text.isdigit():
         return None
 
     ticket_id = int(text)
@@ -223,15 +233,42 @@ def readId(text):
     if ticket_id < 1 or ticket_id > 1000000000:
         return None
 
-    if len(text) > 10:
-        return None
-
     return ticket_id
-def main():
-    # Пример ввода: CONFIG 0
-    config = input("Введите CONFIG и вариант. Пример: CONFIG 0: ").split()
 
-    variant = int(config[1])
+
+def validCommand(command, bonuses):
+    if not command:
+        return False
+
+    action = command[0]
+    if action in ("TRIAGE", "SERVE", "END"):
+        return len(command) == 1
+
+    if action in ("FIND", "CANCEL"):
+        return len(command) == 2 and readId(command[1]) is not None
+
+    if action == "ADD":
+        return (
+            len(command) == 4
+            and readId(command[1]) is not None
+            and command[2] in ("1", "2", "3", "4", "5")
+            and command[3] in bonuses
+        )
+
+    return False
+
+
+def main():
+    # Пока CONFIG не принят, никакие данные заявок не создаются.
+    for line in sys.stdin:
+        config = line.split()
+        if (len(config) == 2 and config[0] == "CONFIG"
+                and len(config[1]) == 1 and config[1] in "0123456789"):
+            variant = int(config[1])
+            break
+        print("INVALID")
+    else:
+        return
 
     size, sw, hw, acc = getConfig(variant)
 
@@ -247,19 +284,9 @@ def main():
 
     order = 0
 
-    while True:
-        command = input(
-            "\nВведите команду:\n"
-            "ADD id severity category  пример: ADD 101 3 SW\n"
-            "TRIAGE\n"
-            "SERVE\n"
-            "FIND id                пример: FIND 101\n"
-            "CANCEL id              пример: CANCEL 101\n"
-            "END\n"
-            "Ваш ввод: "
-        ).split()
-
-        if not command:
+    for line in sys.stdin:
+        command = line.split()
+        if not validCommand(command, bonuses):
             print("INVALID")
             continue
 
@@ -270,7 +297,7 @@ def main():
 
 
         elif action == "ADD":
-            ticket_id = int(command[1])
+            ticket_id = readId(command[1])
             severity = int(command[2])
             category = command[3]
 
@@ -299,7 +326,8 @@ def main():
         elif action == "TRIAGE":
             ticket = waiting.dequeue()
 
-            while ticket and table.get(ticket.id) is not ticket:
+            while ticket and (table.get(ticket.id) is not ticket
+                              or ticket.status != "WAITING"):
                 ticket = waiting.dequeue()
 
             if ticket is None:
@@ -313,7 +341,8 @@ def main():
         elif action == "SERVE":
             ticket = ready.removeMax()
 
-            while ticket and table.get(ticket.id) is not ticket:
+            while ticket and (table.get(ticket.id) is not ticket
+                              or ticket.status != "READY"):
                 ticket = ready.removeMax()
 
             if ticket is None:
@@ -324,7 +353,7 @@ def main():
 
 
         elif action == "FIND":
-            ticket_id = int(command[1])
+            ticket_id = readId(command[1])
             ticket = table.get(ticket_id)
 
             if ticket is None:
@@ -339,7 +368,7 @@ def main():
 
 
         elif action == "CANCEL":
-            ticket_id = int(command[1])
+            ticket_id = readId(command[1])
             ticket = table.remove(ticket_id)
 
             if ticket is None:
@@ -352,4 +381,5 @@ def main():
             print("INVALID")
 
 
-main()
+if __name__ == "__main__":
+    main()

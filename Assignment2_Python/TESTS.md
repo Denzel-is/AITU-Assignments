@@ -1,3 +1,7 @@
+# Test results
+
+Re-run on 2026-10-06. Actual output below was captured from standard output; every run exited with code 0 and empty standard error.
+
 ## Test 1
 General scenario
 
@@ -267,3 +271,230 @@ FOUND 5 READY P=51
 SERVED 5
 ```
 
+
+
+## Test 9
+Invalid commands leave the ticket unchanged
+
+Input:
+```text
+CONFIG 0
+ADD 1 3 SW
+ADD 2 0 HW
+ADD 1 6 SW
+ADD 2 3 OTHER
+ADD 2 3
+ADD 2 3 SW extra
+FIND 1 extra
+CANCEL 1 extra
+TRIAGE extra
+SERVE extra
+END extra
+FIND 1
+TRIAGE
+SERVE
+END
+```
+
+Expected:
+```text
+ADDED 1 P=33
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+FOUND 1 WAITING P=33
+TRIAGED 1 P=33
+SERVED 1
+```
+
+Actual:
+```text
+ADDED 1 P=33
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+FOUND 1 WAITING P=33
+TRIAGED 1 P=33
+SERVED 1
+```
+
+
+## Test 10
+Invalid CONFIG lines followed by a valid configuration
+
+Input:
+```text
+CONFIG
+CONFIG x
+CONFIG -1
+CONFIG 10
+CONFIG 0 extra
+WRONG 0
+CONFIG 0
+ADD 1 1 SW
+CONFIG 1
+FIND 1
+END
+```
+
+Expected:
+```text
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+ADDED 1 P=13
+INVALID
+FOUND 1 WAITING P=13
+```
+
+Actual:
+```text
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+ADDED 1 P=13
+INVALID
+FOUND 1 WAITING P=13
+```
+
+
+## Test 11
+END with an extra argument and normal EOF without END
+
+Input:
+```text
+CONFIG 0
+END extra
+ADD 1 1 SW
+TRIAGE
+SERVE
+```
+
+Expected:
+```text
+INVALID
+ADDED 1 P=13
+TRIAGED 1 P=13
+SERVED 1
+```
+
+Actual:
+```text
+INVALID
+ADDED 1 P=13
+TRIAGED 1 P=13
+SERVED 1
+```
+
+
+## Test 12
+Reuse a READY ID while its old heap record still exists
+
+Input:
+```text
+CONFIG 0
+ADD 5 5 SW
+TRIAGE
+CANCEL 5
+ADD 5 1 HW
+SERVE
+FIND 5
+TRIAGE
+SERVE
+END
+```
+
+Expected:
+```text
+ADDED 5 P=53
+TRIAGED 5 P=53
+CANCELLED 5
+ADDED 5 P=11
+EMPTY READY
+FOUND 5 WAITING P=11
+TRIAGED 5 P=11
+SERVED 5
+```
+
+Actual:
+```text
+ADDED 5 P=53
+TRIAGED 5 P=53
+CANCELLED 5
+ADDED 5 P=11
+EMPTY READY
+FOUND 5 WAITING P=11
+TRIAGED 5 P=11
+SERVED 5
+```
+
+
+## Test 13
+ID limits and invalid numeric arguments
+
+Input:
+```text
+CONFIG 0
+ADD 0 1 SW
+ADD -1 1 SW
+ADD 1000000001 1 SW
+ADD x 1 SW
+ADD 1 x SW
+FIND x
+CANCEL 0
+ADD 1 1 SW
+ADD 1000000000 5 ACC
+ADD 0000000001 2 HW
+FIND 1000000000
+END
+```
+
+Expected:
+```text
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+ADDED 1 P=13
+ADDED 1000000000 P=52
+DUPLICATE 1
+FOUND 1000000000 WAITING P=52
+```
+
+Actual:
+```text
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+INVALID
+ADDED 1 P=13
+ADDED 1000000000 P=52
+DUPLICATE 1
+FOUND 1000000000 WAITING P=52
+```
